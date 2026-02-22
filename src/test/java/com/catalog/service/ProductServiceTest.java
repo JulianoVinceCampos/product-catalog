@@ -61,15 +61,22 @@ class ProductServiceTest {
         return r;
     }
 
-    private Product product(ProductRequest r) {
+    private Product product(UUID id, String sku) {
         return Product.builder()
-                .id(UUID.randomUUID())
-                .sku(r.getSku())
-                .name(r.getName())
-                .price(r.getPrice())
+                .id(id)
+                .sku(sku)
+                .name("Test Product")
+                .price(new BigDecimal("99.99"))
+                .category("Test")
                 .status(ProductStatus.ACTIVE)
                 .deleted(Boolean.FALSE)
                 .build();
+    }
+
+    private static void assertEventType(ApplicationEventPublisher publisher, ProductChangedEvent.Type type) {
+        ArgumentCaptor<ProductChangedEvent> captor = ArgumentCaptor.forClass(ProductChangedEvent.class);
+        verify(publisher, times(1)).publishEvent(captor.capture());
+        assertThat(captor.getValue().getType()).isEqualTo(type);
     }
 
     @Nested
@@ -77,25 +84,22 @@ class ProductServiceTest {
     class Create {
 
         @Test
-        @DisplayName("Happy path — saves and publishes event")
+        @DisplayName("Happy path — saves and publishes CREATED event")
         void happyPath() {
             var r = req();
-            var saved = product(r);
+            var id = UUID.randomUUID();
+            var saved = product(id, r.getSku());
 
             when(productRepository.existsBySku(r.getSku())).thenReturn(false);
-            when(productRepository.save(any())).thenReturn(saved);
+            when(productRepository.save(any(Product.class))).thenReturn(saved);
 
             ProductResponse res = service.create(r);
 
+            assertThat(res.getId()).isEqualTo(id);
             assertThat(res.getSku()).isEqualTo(r.getSku());
             assertThat(res.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
-            // ✅ Correção: verify tipado + validação do Type
-            ArgumentCaptor<ProductChangedEvent> captor = ArgumentCaptor.forClass(ProductChangedEvent.class);
-            verify(eventPublisher, times(1)).publishEvent(captor.capture());
-            assertThat(captor.getValue().getType()).isEqualTo(ProductChangedEvent.Type.CREATED);
-
-            verifyNoMoreInteractions(eventPublisher);
+            assertEventType(eventPublisher, ProductChangedEvent.Type.CREATED);
         }
 
         @Test
@@ -120,8 +124,7 @@ class ProductServiceTest {
         @DisplayName("Returns product when found")
         void found() {
             UUID id = UUID.randomUUID();
-            var p = product(req());
-            p.setId(id);
+            var p = product(id, "SKU-FOUND");
 
             when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(p));
 
@@ -134,7 +137,6 @@ class ProductServiceTest {
         @DisplayName("Throws ProductNotFoundException when not found")
         void notFound() {
             UUID id = UUID.randomUUID();
-
             when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.findById(id))
@@ -149,44 +151,39 @@ class ProductServiceTest {
     class Update {
 
         @Test
-        @DisplayName("Happy path — updates and publishes event")
+        @DisplayName("Happy path — updates and publishes UPDATED event")
         void happyPath() {
             UUID id = UUID.randomUUID();
-            var r = req();
-            var p = product(r);
-            p.setId(id);
 
-            when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(p));
+            // Força o fluxo a entrar na validação de SKU (sem gerar UnnecessaryStubbing)
+            var existing = product(id, "OLD-SKU");
+
+            var r = req(); // SKU-001
+            when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(existing));
             when(productRepository.existsBySkuAndIdNot(r.getSku(), id)).thenReturn(false);
-            when(productRepository.save(any())).thenReturn(p);
+            when(productRepository.save(any(Product.class))).thenReturn(existing);
 
             assertThatCode(() -> service.update(id, r)).doesNotThrowAnyException();
 
-            // ✅ Correção: verify tipado + validação do Type
-            ArgumentCaptor<ProductChangedEvent> captor = ArgumentCaptor.forClass(ProductChangedEvent.class);
-            verify(eventPublisher, times(1)).publishEvent(captor.capture());
-            assertThat(captor.getValue().getType()).isEqualTo(ProductChangedEvent.Type.UPDATED);
-
-            verifyNoMoreInteractions(eventPublisher);
+            assertEventType(eventPublisher, ProductChangedEvent.Type.UPDATED);
         }
 
         @Test
         @DisplayName("Throws when SKU conflicts with another product")
         void skuConflict() {
             UUID id = UUID.randomUUID();
+            var existing = product(id, "OLD-SKU");
+
             var r = req();
             r.setSku("OTHER-SKU");
 
-            var p = product(new ProductRequest());
-            p.setId(id);
-            p.setSku("OLD-SKU");
-
-            when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(p));
+            when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(existing));
             when(productRepository.existsBySkuAndIdNot("OTHER-SKU", id)).thenReturn(true);
 
             assertThatThrownBy(() -> service.update(id, r))
                     .isInstanceOf(DuplicateSkuException.class);
 
+            verify(productRepository, never()).save(any());
             verifyNoInteractions(eventPublisher);
         }
     }
@@ -196,33 +193,26 @@ class ProductServiceTest {
     class Delete {
 
         @Test
-        @DisplayName("Soft-deletes — sets deleted=true and status=INACTIVE")
+        @DisplayName("Soft-deletes — sets deleted=true and status=INACTIVE and publishes DELETED event")
         void softDelete() {
             UUID id = UUID.randomUUID();
-            var p = product(req());
-            p.setId(id);
+            var p = product(id, "SKU-DEL");
 
             when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(p));
-            when(productRepository.save(any())).thenReturn(p);
+            when(productRepository.save(any(Product.class))).thenReturn(p);
 
             service.delete(id);
 
             assertThat(p.getDeleted()).isTrue();
             assertThat(p.getStatus()).isEqualTo(ProductStatus.INACTIVE);
 
-            // ✅ Correção: verify tipado + validação do Type
-            ArgumentCaptor<ProductChangedEvent> captor = ArgumentCaptor.forClass(ProductChangedEvent.class);
-            verify(eventPublisher, times(1)).publishEvent(captor.capture());
-            assertThat(captor.getValue().getType()).isEqualTo(ProductChangedEvent.Type.DELETED);
-
-            verifyNoMoreInteractions(eventPublisher);
+            assertEventType(eventPublisher, ProductChangedEvent.Type.DELETED);
         }
 
         @Test
         @DisplayName("Throws ProductNotFoundException when not found")
         void notFound() {
             UUID id = UUID.randomUUID();
-
             when(productRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.delete(id))
