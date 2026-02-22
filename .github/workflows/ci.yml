@@ -13,13 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Grant execute permission to mvnw
+        run: chmod +x mvnw
+
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: temurin
           cache: maven
+
       - name: Run unit tests
         run: ./mvnw test -q
+
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         if: always()
@@ -33,11 +39,16 @@ jobs:
     needs: unit-tests
     steps:
       - uses: actions/checkout@v4
+
+      - name: Grant execute permission to mvnw
+        run: chmod +x mvnw
+
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: temurin
           cache: maven
+
       - name: Run integration tests
         run: ./mvnw failsafe:integration-test failsafe:verify -q
         env:
