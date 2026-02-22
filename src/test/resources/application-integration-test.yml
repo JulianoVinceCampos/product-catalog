@@ -1,0 +1,19 @@
+spring:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  data:
+    redis:
+      timeout: 2000ms
+
+storage:
+  provider: local
+
+logging:
+  level:
+    com.catalog: INFO
+    org.testcontainers: WARN
+    org.springframework.data.elasticsearch: WARN

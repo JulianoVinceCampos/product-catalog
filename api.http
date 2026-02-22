@@ -1,0 +1,87 @@
+### Product Catalog API - HTTP Requests
+### Use with IntelliJ IDEA HTTP Client or VS Code REST Client
+
+@baseUrl = http://localhost:8080
+
+### ── HEALTH ─────────────────────────────────────────────────────────────────
+
+### Check health
+GET {{baseUrl}}/actuator/health
+
+### Prometheus metrics
+GET {{baseUrl}}/actuator/prometheus
+
+### ── CREATE PRODUCT ──────────────────────────────────────────────────────────
+
+### Create product
+# @name create
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "LAPTOP-001",
+  "name": "MacBook Pro 14 M3",
+  "description": "Apple M3 Pro chip, 18GB RAM, 512GB SSD",
+  "price": 10999.99,
+  "category": "Notebooks",
+  "status": "ACTIVE"
+}
+
+### ── GET / UPDATE / DELETE ───────────────────────────────────────────────────
+
+### Get by ID (replace UUID)
+GET {{baseUrl}}/api/products/00000000-0000-0000-0000-000000000000
+
+### Update product
+PUT {{baseUrl}}/api/products/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "sku": "LAPTOP-001",
+  "name": "MacBook Pro 14 M3 - Updated",
+  "description": "Updated description",
+  "price": 9999.99,
+  "category": "Notebooks",
+  "status": "ACTIVE"
+}
+
+### Delete product
+DELETE {{baseUrl}}/api/products/00000000-0000-0000-0000-000000000000
+
+### ── LIST ────────────────────────────────────────────────────────────────────
+
+### List all (paginated)
+GET {{baseUrl}}/api/products?page=0&size=10
+
+### Filter by category
+GET {{baseUrl}}/api/products?category=Notebooks&status=ACTIVE
+
+### ── SEARCH (Elasticsearch) ─────────────────────────────────────────────────
+
+### Full-text search
+GET {{baseUrl}}/api/search/products?q=macbook
+
+### Search with filters
+GET {{baseUrl}}/api/search/products?q=pro&category=Notebooks&minPrice=5000&maxPrice=15000&sort=price&order=asc
+
+### ── VALIDATION ERRORS (expect 422) ─────────────────────────────────────────
+
+### Name too short
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "ERR-001",
+  "name": "AB",
+  "price": 99.99
+}
+
+### Price = 0
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "ERR-002",
+  "name": "Valid Name",
+  "price": 0
+}
