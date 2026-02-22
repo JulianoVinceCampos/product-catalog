@@ -39,7 +39,7 @@ public class S3StorageService implements StorageService {
             );
             String url = endpoint.isBlank()
                     ? "https://%s.s3.amazonaws.com/%s".formatted(bucket, key)
-                    : "%s/%s/%s".formatted(endpoint.stripTrailing("/"), bucket, key);
+                    : "%s/%s/%s".formatted(endpoint.replaceAll("/+$", ""), bucket, key);
             log.info("S3 upload OK: url={}", url);
             return url;
         } catch (S3Exception e) {
