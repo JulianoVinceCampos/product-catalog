@@ -12,9 +12,9 @@ REST API em **Java 17 + Spring Boot 3** para gerenciamento de catálogo de produ
 | Banco de dados | MySQL + JPA + Flyway     | 8.0 |
 | Busca          | Elasticsearch            | 8.13 |
 | Cache          | Redis + Spring Cache     | 7 |
-| Métricas       | Micrometer + Prometheus  | — |
+| Métricas       | Micrometer + Prometheus  | - |
 | Mapeamento     | MapStruct                | 1.5.5 |
-| Contêineres    | Docker + Docker Compose  | — |
+| Contêineres    | Docker + Docker Compose  | - |
 
 ---
 
@@ -98,19 +98,19 @@ docker compose exec app java -Dspring.profiles.active=prod,seed -jar app.jar
 | GET      | /api/search/products       | Busca full-text (Elasticsearch)  | 200    |
 
 #### Parâmetros de /api/products:
-- `category` — filtro por categoria
-- `status` — ACTIVE ou INACTIVE
-- `page` — número da página (padrão: 0)
-- `size` — itens por página (padrão: 20, máx: 100)
+- `category`: filtro por categoria
+- `status`: ACTIVE ou INACTIVE
+- `page`: número da página (padrão: 0)
+- `size`: itens por página (padrão: 20, máx: 100)
 
 #### Parâmetros de /api/search/products:
-- `q` — texto de busca (name + description)
-- `category` — filtro exato
-- `minPrice` / `maxPrice` — faixa de preço
-- `status` — ACTIVE ou INACTIVE
-- `sort` — campo: price ou createdAt
-- `order` — asc ou desc
-- `page` / `size` — paginação
+- `q`: texto de busca (name + description)
+- `category`: filtro exato
+- `minPrice` / `maxPrice`: faixa de preço
+- `status`: ACTIVE ou INACTIVE
+- `sort` - campo: price ou createdAt
+- `order`: asc ou desc
+- `page` / `size`: paginação
 
 ---
 
@@ -169,7 +169,7 @@ curl -s "http://localhost:8080/api/products?category=Notebooks&status=ACTIVE"
 ### Deletar (soft delete):
 ```bash
 curl -s -X DELETE http://localhost:8080/api/products/$ID
-# 204 No Content — produto ainda existe no banco mas invisível
+# 204 No Content: produto ainda existe no banco mas invisível
 ```
 
 ### Testar validações (espera 422):
@@ -325,12 +325,12 @@ product-catalog/
 
 ## 9. Decisões de arquitetura
 
-**Soft delete** — produtos deletados ficam no banco com `deleted=true`, invisíveis às queries normais. Preserva integridade histórica.
+**Soft delete**: produtos deletados ficam no banco com `deleted=true`, invisíveis às queries normais. Preserva integridade histórica.
 
-**@TransactionalEventListener(AFTER_COMMIT)** — Elasticsearch só é sincronizado após o commit da transação MySQL. Elimina risco de indexar dados que serão revertidos.
+**@TransactionalEventListener(AFTER_COMMIT)**: Elasticsearch só é sincronizado após o commit da transação MySQL. Elimina risco de indexar dados que serão revertidos.
 
-**MapStruct** — Mapeamento gerado em tempo de compilação. Zero reflexão em runtime, erros detectados no build.
+**MapStruct**: Mapeamento gerado em tempo de compilação. Zero reflexão em runtime, erros detectados no build.
 
-**AOP para cache de busca** — O aspecto `SearchCacheAspect` intercepta chamadas de busca e aplica cache Redis com chave composta por todos os parâmetros do filtro.
+**AOP para cache de busca**: O aspecto `SearchCacheAspect` intercepta chamadas de busca e aplica cache Redis com chave composta por todos os parâmetros do filtro.
 
-**Batch fetch no search** — Após busca no ES, os IDs são coletados e o banco é consultado com `findAllById()`, evitando N+1 queries.
+**Batch fetch no search**: Após busca no ES, os IDs são coletados e o banco é consultado com `findAllById()`, evitando N+1 queries.

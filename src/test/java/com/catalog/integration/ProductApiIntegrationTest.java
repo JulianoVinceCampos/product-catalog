@@ -32,7 +32,7 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         return restTemplate.postForEntity("/api/products", req(sku), ProductResponse.class);
     }
 
-    @Test @DisplayName("201 — creates and persists product")
+    @Test @DisplayName("201: creates and persists product")
     void shouldCreate() {
         var res = create("IT-001");
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -40,14 +40,14 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         assertThat(repo.count()).isEqualTo(1);
     }
 
-    @Test @DisplayName("409 — duplicate SKU")
+    @Test @DisplayName("409: duplicate SKU")
     void shouldRejectDuplicate() {
         create("DUP-SKU");
         var res = restTemplate.postForEntity("/api/products", req("DUP-SKU"), ApiErrorResponse.class);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
-    @Test @DisplayName("422 — validation: blank name")
+    @Test @DisplayName("422 - validation: blank name")
     void shouldRejectBlankName() {
         var r = req("VAL-SKU"); r.setName("");
         var res = restTemplate.postForEntity("/api/products", r, ApiErrorResponse.class);
@@ -55,7 +55,7 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         assertThat(res.getBody().getFieldErrors()).containsKey("name");
     }
 
-    @Test @DisplayName("200 — finds product by id")
+    @Test @DisplayName("200: finds product by id")
     void shouldFindById() {
         UUID id = create("GET-001").getBody().getId();
         var res = restTemplate.getForEntity("/api/products/{id}", ProductResponse.class, id);
@@ -63,13 +63,13 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         assertThat(res.getBody().getId()).isEqualTo(id);
     }
 
-    @Test @DisplayName("404 — unknown id")
+    @Test @DisplayName("404: unknown id")
     void shouldReturn404() {
         var res = restTemplate.getForEntity("/api/products/{id}", ApiErrorResponse.class, UUID.randomUUID());
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
-    @Test @DisplayName("200 — updates product")
+    @Test @DisplayName("200: updates product")
     void shouldUpdate() {
         UUID id = create("UPD-001").getBody().getId();
         var r = req("UPD-001"); r.setName("Updated Name");
@@ -78,7 +78,7 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         assertThat(res.getBody().getName()).isEqualTo("Updated Name");
     }
 
-    @Test @DisplayName("204 — soft deletes, then 404")
+    @Test @DisplayName("204: soft deletes, then 404")
     void shouldSoftDelete() {
         UUID id = create("DEL-001").getBody().getId();
         restTemplate.delete("/api/products/{id}", id);
@@ -87,7 +87,7 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         assertThat(repo.findById(id)).isPresent(); // still in DB
     }
 
-    @Test @DisplayName("200 — lists products paginated")
+    @Test @DisplayName("200: lists products paginated")
     void shouldList() {
         create("LIST-A"); create("LIST-B"); create("LIST-C");
         var res = restTemplate.getForEntity("/api/products?page=0&size=2", PageResponse.class);
@@ -96,7 +96,7 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
         assertThat(res.getBody().getTotalElements()).isEqualTo(3L);
     }
 
-    @Test @DisplayName("200 — filters by category")
+    @Test @DisplayName("200: filters by category")
     void shouldFilterByCategory() {
         create("CAT-A");
         var other = req("CAT-B"); other.setCategory("Other");

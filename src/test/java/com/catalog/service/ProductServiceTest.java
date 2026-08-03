@@ -84,7 +84,7 @@ class ProductServiceTest {
     class Create {
 
         @Test
-        @DisplayName("Happy path — saves and publishes CREATED event")
+        @DisplayName("Happy path: saves and publishes CREATED event")
         void happyPath() {
             var r = req();
             var id = UUID.randomUUID();
@@ -151,7 +151,7 @@ class ProductServiceTest {
     class Update {
 
         @Test
-        @DisplayName("Happy path — updates and publishes UPDATED event")
+        @DisplayName("Happy path: updates and publishes UPDATED event")
         void happyPath() {
             UUID id = UUID.randomUUID();
 
@@ -193,7 +193,7 @@ class ProductServiceTest {
     class Delete {
 
         @Test
-        @DisplayName("Soft-deletes — sets deleted=true and status=INACTIVE and publishes DELETED event")
+        @DisplayName("Soft-deletes: sets deleted=true and status=INACTIVE and publishes DELETED event")
         void softDelete() {
             UUID id = UUID.randomUUID();
             var p = product(id, "SKU-DEL");
