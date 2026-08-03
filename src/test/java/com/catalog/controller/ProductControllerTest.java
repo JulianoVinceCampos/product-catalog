@@ -49,7 +49,7 @@ class ProductControllerTest {
                 .createdAt(Instant.now()).updatedAt(Instant.now()).build();
     }
 
-    @Test @DisplayName("POST 201 — creates product")
+    @Test @DisplayName("POST 201: creates product")
     void createOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(productService.create(any())).thenReturn(resp(id));
@@ -59,7 +59,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
-    @Test @DisplayName("POST 422 — name too short")
+    @Test @DisplayName("POST 422: name too short")
     void createValidationError() throws Exception {
         var r = req(); r.setName("AB");
         mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(r)))
@@ -67,7 +67,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.name").exists());
     }
 
-    @Test @DisplayName("POST 422 — price is zero")
+    @Test @DisplayName("POST 422: price is zero")
     void createPriceZero() throws Exception {
         var r = req(); r.setPrice(BigDecimal.ZERO);
         mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(r)))
@@ -75,7 +75,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.price").exists());
     }
 
-    @Test @DisplayName("POST 409 — duplicate SKU")
+    @Test @DisplayName("POST 409: duplicate SKU")
     void createDuplicate() throws Exception {
         when(productService.create(any())).thenThrow(new DuplicateSkuException("SKU-CTRL-001"));
         mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(req())))
@@ -83,7 +83,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.status").value(409));
     }
 
-    @Test @DisplayName("GET 200 — returns product")
+    @Test @DisplayName("GET 200: returns product")
     void getByIdOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(productService.findById(id)).thenReturn(resp(id));
@@ -92,7 +92,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
-    @Test @DisplayName("GET 404 — product not found")
+    @Test @DisplayName("GET 404: product not found")
     void getByIdNotFound() throws Exception {
         UUID id = UUID.randomUUID();
         when(productService.findById(id)).thenThrow(new ProductNotFoundException(id));
@@ -101,7 +101,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 
-    @Test @DisplayName("PUT 200 — updates product")
+    @Test @DisplayName("PUT 200: updates product")
     void updateOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(productService.update(eq(id), any())).thenReturn(resp(id));
@@ -109,7 +109,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk());
     }
 
-    @Test @DisplayName("DELETE 204 — soft deletes product")
+    @Test @DisplayName("DELETE 204: soft deletes product")
     void deleteOk() throws Exception {
         UUID id = UUID.randomUUID();
         doNothing().when(productService).delete(id);
@@ -117,7 +117,7 @@ class ProductControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-    @Test @DisplayName("GET list 200 — paginated results")
+    @Test @DisplayName("GET list 200: paginated results")
     void listOk() throws Exception {
         UUID id = UUID.randomUUID();
         var page = PageResponse.<ProductResponse>builder()
